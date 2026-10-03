@@ -1,0 +1,16 @@
+# Pyrefly Language Server Configuration for backend
+python_interpreter_path = "../.venv/bin/python3"
+search_path = [
+  ".",
+  "../.venv/lib/python3.14/site-packages",
+  "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages"
+]
+search-path = [
+  ".",
+  "../.venv/lib/python3.14/site-packages",
+  "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages"
+]
+
+[errors]
+"missing-module" = "ignore"
+"untyped-import" = "ignore"
