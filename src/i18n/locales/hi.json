@@ -1,0 +1,74 @@
+{
+  "brand": {
+    "title": "कौशल दृष्टि",
+    "subtitle": "कौशल विकास और उद्यमिता मंत्रालय"
+  },
+  "nav": {
+    "scope_national": "राष्ट्रीय (अखिल भारतीय)",
+    "scope_state": "राज्य-स्तरीय दृश्य",
+    "download_api_keys": "API कुंजियाँ डाउनलोड करें"
+  },
+  "dashboard": {
+    "label": "डैशबोर्ड",
+    "realtime_subtitle": "रीयल-टाइम इंटेलिजेंस डैशबोर्ड",
+    "main_heading": "माँग-आपूर्ति विश्लेषिकी",
+    "live_status": "लाइव · 5 मिनट पहले अपडेट किया गया"
+  },
+  "metrics": {
+    "total_active_training_seats": "कुल सक्रिय प्रशिक्षण सीटें",
+    "aggregated_industry_demand": "समग्र उद्योग माँग",
+    "overall_demand_supply_gap": "समग्र माँग-आपूर्ति अंतर",
+    "across_centres": "{{count}} केंद्रों में",
+    "from_sscs": "{{count}} सेक्टर स्किल काउंसिल से",
+    "net_deficit": "सभी क्षेत्रों में शुद्ध कमी",
+    "net_surplus": "सभी क्षेत्रों में शुद्ध अधिशेष"
+  },
+  "chart": {
+    "title": "क्षेत्रवार माँग बनाम आपूर्ति",
+    "subtitle": "5 पायलट क्षेत्र · वित्तीय वर्ष 2026-27 अनुमान",
+    "training_capacity": "प्रशिक्षण क्षमता",
+    "industry_demand": "उद्योग माँग"
+  },
+  "sectors": {
+    "green_energy": "हरित ऊर्जा",
+    "electronics": "इलेक्ट्रॉनिक्स",
+    "logistics": "लॉजिस्टिक्स",
+    "healthcare": "स्वास्थ्य सेवा",
+    "it_ites": "आईटी / आईटीईएस"
+  },
+  "early_warnings": {
+    "title": "प्रारंभिक चेतावनी संकेत",
+    "active_alerts": "{{count}} सक्रिय अलर्ट",
+    "view_all": "सभी अलर्ट देखें →"
+  },
+  "alerts": {
+    "oversupply": "अतिआपूर्ति चेतावनी",
+    "acute_shortage": "गंभीर कमी",
+    "moderate_shortage": "मध्यम कमी",
+    "freeze_batch": "बैच स्वीकृतियाँ रोकें",
+    "increase_target": "लक्ष्य आवंटन बढ़ाएँ",
+    "trainees": "प्रशिक्षु"
+  },
+  "severity": {
+    "critical": "गंभीर",
+    "high": "उच्च",
+    "medium": "मध्यम"
+  },
+  "sector_forecasting": {
+    "label": "क्षेत्र पूर्वानुमान"
+  },
+  "export_data": {
+    "label": "डेटा निर्यात करें"
+  },
+  "timestamps": {
+    "hrs_ago": "{{count}} घंटे पहले"
+  },
+  "footer": {
+    "copyright": "© 2026 कौशल विकास और उद्यमिता मंत्रालय, भारत सरकार",
+    "security": "सुरक्षित और एन्क्रिप्टेड · NIC डेटा सेंटर"
+  },
+  "language_switcher": {
+    "english": "English",
+    "hindi": "हिन्दी"
+  }
+}

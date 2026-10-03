@@ -1,0 +1,74 @@
+{
+  "brand": {
+    "title": "Kaushal Drishty",
+    "subtitle": "Ministry of Skill Development & Entrepreneurship"
+  },
+  "nav": {
+    "scope_national": "National (All India)",
+    "scope_state": "State-Level View",
+    "download_api_keys": "Download API Keys"
+  },
+  "dashboard": {
+    "label": "Dashboard",
+    "realtime_subtitle": "Real-Time Intelligence Dashboard",
+    "main_heading": "Demand-Supply Analytics",
+    "live_status": "Live · Last updated 5 min ago"
+  },
+  "metrics": {
+    "total_active_training_seats": "Total Active Training Seats",
+    "aggregated_industry_demand": "Aggregated Industry Demand",
+    "overall_demand_supply_gap": "Overall Demand-Supply Gap",
+    "across_centres": "across {{count}} centres",
+    "from_sscs": "from {{count}} Sector Skill Councils",
+    "net_deficit": "net deficit across sectors",
+    "net_surplus": "net surplus across sectors"
+  },
+  "chart": {
+    "title": "Sector-wise Demand vs Supply",
+    "subtitle": "5 Pilot Sectors · FY 2026-27 Projections",
+    "training_capacity": "Training Capacity",
+    "industry_demand": "Industry Demand"
+  },
+  "sectors": {
+    "green_energy": "Green Energy",
+    "electronics": "Electronics",
+    "logistics": "Logistics",
+    "healthcare": "Healthcare",
+    "it_ites": "IT / ITES"
+  },
+  "early_warnings": {
+    "title": "Early Warning Flags",
+    "active_alerts": "{{count}} active alerts",
+    "view_all": "View All Alerts →"
+  },
+  "alerts": {
+    "oversupply": "Oversupply Warning",
+    "acute_shortage": "Acute Shortage",
+    "moderate_shortage": "Moderate Shortage",
+    "freeze_batch": "Freeze Batch Sanctions",
+    "increase_target": "Increase Target Allocation",
+    "trainees": "trainees"
+  },
+  "severity": {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium"
+  },
+  "sector_forecasting": {
+    "label": "Sector Forecasting"
+  },
+  "export_data": {
+    "label": "Export Data"
+  },
+  "timestamps": {
+    "hrs_ago": "{{count}} hrs ago"
+  },
+  "footer": {
+    "copyright": "© 2026 Ministry of Skill Development & Entrepreneurship, Government of India",
+    "security": "Secured & Encrypted · NIC Data Centre"
+  },
+  "language_switcher": {
+    "english": "English",
+    "hindi": "हिन्दी"
+  }
+}
