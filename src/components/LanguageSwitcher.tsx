@@ -86,7 +86,7 @@ const LanguageSwitcher: FC = () => {
         <div
           role="listbox"
           aria-label="Select language"
-          className="absolute right-0 top-full z-[60] mt-2 w-52 origin-top-right animate-[fadeIn_150ms_ease-out] overflow-hidden rounded-xl border border-white/10 bg-navy-800/95 py-1 shadow-2xl backdrop-blur-xl"
+          className="absolute right-0 top-full z-[60] mt-2 w-52 origin-top-right animate-[fadeIn_150ms_ease-out] overflow-hidden rounded-xl border border-white/10 bg-navy-800/98 py-1 shadow-2xl"
         >
           {/* header */}
           <div className="border-b border-white/[0.06] px-4 py-2.5">

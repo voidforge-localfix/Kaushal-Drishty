@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, type FC } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   BarChart,
@@ -723,7 +723,7 @@ const CustomTooltip: FC<{
     : label;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-navy-900/95 px-5 py-4 shadow-2xl backdrop-blur-xl">
+    <div className="rounded-xl border border-white/10 bg-navy-900/98 px-5 py-4 shadow-2xl">
       <p className="mb-2 text-sm font-semibold text-white">{translatedLabel}</p>
       {payload.map((entry) => (
         <div key={entry.dataKey} className="flex items-center gap-2 text-xs">
@@ -765,7 +765,7 @@ const TrendTooltip: FC<{
   const isDeficit = gapVal > 0;
 
   return (
-    <div className="rounded-xl border border-white/15 bg-navy-900/98 px-5 py-4 shadow-2xl backdrop-blur-2xl">
+    <div className="rounded-xl border border-white/15 bg-navy-900/98 px-5 py-4 shadow-2xl">
       <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-accent-cyan">
         Rolling Time-Series • {label}
       </p>
@@ -1222,10 +1222,17 @@ const MSDEDashboard: FC = () => {
       ? t('nav.scope_national')
       : selectedState;
 
+  // Memoized time-series forecast data to avoid repeated calculations during renders
+  const activeTimeSeries = useMemo(() => {
+    return timeSeriesData.length > 0
+      ? timeSeriesData
+      : generateLocalTimeSeries(scope === 'national' ? 'National' : selectedState);
+  }, [timeSeriesData, scope, selectedState]);
+
   return (
     <div className="noise-overlay min-h-screen">
       {/* ── NAVBAR ─────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 border-b border-white/[0.05] bg-navy-950/80 backdrop-blur-2xl backdrop-saturate-150">
+      <nav className="sticky top-0 z-50 border-b border-white/[0.05] bg-navy-950/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1920px] items-center justify-between px-6 py-2.5">
           {/* brand */}
           <div className="flex items-center gap-3.5">
@@ -1263,7 +1270,7 @@ const MSDEDashboard: FC = () => {
                 />
               </button>
               {scopeOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-56 overflow-hidden rounded-xl border border-white/[0.08] bg-navy-800/95 py-1 shadow-2xl backdrop-blur-xl">
+                <div className="absolute right-0 top-full mt-1.5 w-56 overflow-hidden rounded-xl border border-white/[0.08] bg-navy-800/98 py-1 shadow-2xl">
                   <button
                     onClick={() => {
                       setScope('national');
@@ -1311,7 +1318,7 @@ const MSDEDashboard: FC = () => {
                   />
                 </button>
                 {stateDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 w-80 overflow-hidden rounded-xl border border-white/[0.12] bg-navy-900/98 shadow-2xl backdrop-blur-2xl z-50">
+                  <div className="absolute right-0 top-full mt-1.5 w-80 overflow-hidden rounded-xl border border-white/[0.12] bg-navy-900/98 shadow-2xl z-50">
                     <div className="border-b border-white/[0.08] p-3 bg-navy-950/60">
                       <div className="flex items-center gap-2 rounded-lg bg-white/[0.05] border border-white/[0.08] px-3 py-2">
                         <Search className="h-3.5 w-3.5 text-slate-400" />
@@ -1390,7 +1397,7 @@ const MSDEDashboard: FC = () => {
                 </span>
               </button>
               {notificationsOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-2xl border border-white/[0.1] bg-navy-900/98 shadow-2xl backdrop-blur-2xl z-50">
+                <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-2xl border border-white/[0.1] bg-navy-900/98 shadow-2xl z-50">
                   <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-3 bg-navy-950/60">
                     <span className="text-xs font-bold text-white flex items-center gap-2">
                       <AlertTriangle className="h-3.5 w-3.5 text-alert-red" />
@@ -1535,8 +1542,8 @@ const MSDEDashboard: FC = () => {
                   style={{ background: `linear-gradient(90deg, ${m.color}80, ${m.color}20)` }}
                 />
                 <div
-                  className="pointer-events-none absolute -right-6 -top-6 h-36 w-36 rounded-full animate-pulse-glow blur-3xl"
-                  style={{ background: m.color }}
+                  className="pointer-events-none absolute -right-6 -top-6 h-36 w-36 rounded-full animate-pulse-glow blur-2xl"
+                  style={{ background: m.color, transform: 'translateZ(0)', willChange: 'opacity' }}
                 />
                 <div className="relative p-6">
                   <div className="mb-5 flex items-center justify-between">
@@ -1694,9 +1701,9 @@ const MSDEDashboard: FC = () => {
             {/* Chart Body: Line Graph by default on Main Screen, Bar Chart when clicking See Sector-Wise Segregation */}
             {chartTab === 'trend' ? (
               <div className="px-4 pt-4 pb-2">
-                <ResponsiveContainer width="100%" height={380}>
+                <ResponsiveContainer width="100%" height={380} debounce={50}>
                   <LineChart
-                    data={timeSeriesData.length > 0 ? timeSeriesData : generateLocalTimeSeries(scope === 'national' ? 'National' : selectedState)}
+                    data={activeTimeSeries}
                     margin={{ top: 15, right: 15, left: 0, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.035)" vertical={false} />
@@ -1725,6 +1732,7 @@ const MSDEDashboard: FC = () => {
                       name="Training Supply"
                       stroke="#3b82f6"
                       strokeWidth={3}
+                      isAnimationActive={false}
                       dot={{ fill: '#3b82f6', r: 3.5, stroke: '#1e3a8a', strokeWidth: 1.5 }}
                       activeDot={{ r: 6, fill: '#60a5fa', stroke: '#1e3a8a', strokeWidth: 2 }}
                     />
@@ -1734,6 +1742,7 @@ const MSDEDashboard: FC = () => {
                       name="Industry Demand"
                       stroke="#a855f7"
                       strokeWidth={3}
+                      isAnimationActive={false}
                       dot={{ fill: '#a855f7', r: 3.5, stroke: '#581c87', strokeWidth: 1.5 }}
                       activeDot={{ r: 6, fill: '#c084fc', stroke: '#581c87', strokeWidth: 2 }}
                     />
@@ -1744,6 +1753,7 @@ const MSDEDashboard: FC = () => {
                       stroke="#f59e0b"
                       strokeWidth={2.5}
                       strokeDasharray="5 5"
+                      isAnimationActive={false}
                       dot={{ fill: '#f59e0b', r: 3.5, stroke: '#78350f', strokeWidth: 1.5 }}
                       activeDot={{ r: 6, fill: '#fbbf24', stroke: '#78350f', strokeWidth: 2 }}
                     />
@@ -1752,7 +1762,7 @@ const MSDEDashboard: FC = () => {
               </div>
             ) : (
               <div className="px-4 pt-4 pb-2">
-                <ResponsiveContainer width="100%" height={380}>
+                <ResponsiveContainer width="100%" height={380} debounce={50}>
                   <BarChart data={activeData?.sectors || []} barCategoryGap="22%" barGap={8}>
                     <defs>
                       <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
@@ -1793,6 +1803,7 @@ const MSDEDashboard: FC = () => {
                       fill="url(#blueGrad)"
                       radius={[8, 8, 0, 0]}
                       maxBarSize={48}
+                      isAnimationActive={false}
                       className="cursor-pointer"
                       onClick={(entry: unknown) => {
                         const sec = (entry as { sector?: string })?.sector;
@@ -1807,6 +1818,7 @@ const MSDEDashboard: FC = () => {
                       fill="url(#purpleGrad)"
                       radius={[8, 8, 0, 0]}
                       maxBarSize={48}
+                      isAnimationActive={false}
                       className="cursor-pointer"
                       onClick={(entry: unknown) => {
                         const sec = (entry as { sector?: string })?.sector;
@@ -1873,9 +1885,7 @@ const MSDEDashboard: FC = () => {
                     <span className="text-slate-200 font-semibold">ARIMA + Gradient Boosted Demand Ensemble</span>
                   </div>
                   {(() => {
-                    const activeSeries = timeSeriesData.length > 0
-                      ? timeSeriesData
-                      : generateLocalTimeSeries(scope === 'national' ? 'National' : selectedState);
+                    const activeSeries = activeTimeSeries;
                     const peakDeficit = activeSeries.length > 0
                       ? activeSeries.reduce((max, p) => (p.gap > max.gap ? p : max), activeSeries[0])
                       : { month: "Mar'26", gap: 0 };
@@ -2159,7 +2169,7 @@ const MSDEDashboard: FC = () => {
                     </div>
                   </div>
                   <div className="h-44 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" debounce={100}>
                       <AreaChart data={sectorForecastData.forecast}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                         <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -2167,8 +2177,8 @@ const MSDEDashboard: FC = () => {
                         <Tooltip
                           contentStyle={{ backgroundColor: '#0f172a', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '11px' }}
                         />
-                        <Area type="monotone" dataKey="predicted_capacity" name="Predicted Capacity" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} />
-                        <Area type="monotone" dataKey="predicted_demand" name="Predicted Demand" stroke="#a855f7" fill="#a855f7" fillOpacity={0.2} />
+                        <Area type="monotone" dataKey="predicted_capacity" name="Predicted Capacity" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} isAnimationActive={false} />
+                        <Area type="monotone" dataKey="predicted_demand" name="Predicted Demand" stroke="#a855f7" fill="#a855f7" fillOpacity={0.2} isAnimationActive={false} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>

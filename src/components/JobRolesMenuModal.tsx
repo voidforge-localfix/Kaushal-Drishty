@@ -627,7 +627,7 @@ const JobHistoryTooltip: FC<{
   const isDeficit = gap > 0;
 
   return (
-    <div className="rounded-xl border border-white/15 bg-navy-900/98 px-3.5 py-2.5 text-xs shadow-xl backdrop-blur-xl">
+    <div className="rounded-xl border border-white/15 bg-navy-900/98 px-3.5 py-2.5 text-xs shadow-xl">
       <div className="font-bold text-accent-cyan mb-1.5">{label}</div>
       <div className="space-y-1">
         <div className="flex items-center justify-between gap-4 text-slate-300">
@@ -751,7 +751,7 @@ export const JobRolesMenuModal: FC<JobRolesMenuModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="relative flex flex-col w-full max-w-7xl max-h-[92vh] overflow-hidden rounded-3xl border border-white/15 bg-navy-950/95 shadow-2xl backdrop-blur-2xl text-slate-100"
+        className="relative flex flex-col w-full max-w-7xl max-h-[92vh] overflow-hidden rounded-3xl border border-white/15 bg-navy-950/98 shadow-2xl text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── TOP HEADER ── */}
@@ -871,7 +871,7 @@ export const JobRolesMenuModal: FC<JobRolesMenuModalProps> = ({
               return (
                 <div key={sectorName} className="pt-6 first:pt-0 space-y-5">
                   {/* Sector Group Banner */}
-                  <div className="flex items-center justify-between flex-wrap gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] px-5 py-3.5 backdrop-blur-sm">
+                  <div className="flex items-center justify-between flex-wrap gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{theme?.icon}</span>
                       <div>
@@ -1060,7 +1060,7 @@ export const JobRolesMenuModal: FC<JobRolesMenuModalProps> = ({
 
                             {/* 12-Month Historical AreaChart */}
                             <div className="rounded-2xl border border-white/[0.06] bg-navy-950/40 p-3 pt-4">
-                              <ResponsiveContainer width="100%" height={170}>
+                              <ResponsiveContainer width="100%" height={170} debounce={150}>
                                 <AreaChart data={job.history} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                                   <defs>
                                     <linearGradient id={`supply-${job.id}`} x1="0" y1="0" x2="0" y2="1">
@@ -1098,6 +1098,7 @@ export const JobRolesMenuModal: FC<JobRolesMenuModalProps> = ({
                                     strokeWidth={2}
                                     fillOpacity={1}
                                     fill={`url(#supply-${job.id})`}
+                                    isAnimationActive={false}
                                   />
                                   <Area
                                     type="monotone"
@@ -1107,6 +1108,7 @@ export const JobRolesMenuModal: FC<JobRolesMenuModalProps> = ({
                                     strokeWidth={2}
                                     fillOpacity={1}
                                     fill={`url(#demand-${job.id})`}
+                                    isAnimationActive={false}
                                   />
                                   <Area
                                     type="monotone"
@@ -1116,6 +1118,7 @@ export const JobRolesMenuModal: FC<JobRolesMenuModalProps> = ({
                                     strokeWidth={1.5}
                                     strokeDasharray="3 3"
                                     fill="none"
+                                    isAnimationActive={false}
                                   />
                                 </AreaChart>
                               </ResponsiveContainer>

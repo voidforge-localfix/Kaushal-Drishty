@@ -81,19 +81,32 @@
 
   body {
     font-family: var(--font-sans);
-    background: #050816;
+    background-color: #050816;
+    color: #e2e8f0;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior-y: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Hardware-accelerated fixed background for silky-smooth 60/120fps scrolling on Windows */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-color: #050816;
     background-image:
       radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 60%),
       radial-gradient(ellipse 60% 50% at 80% 40%, rgba(6, 182, 212, 0.05) 0%, transparent 50%),
       radial-gradient(ellipse 70% 50% at 20% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
       linear-gradient(180deg, #050816 0%, #080d24 30%, #0e1534 100%);
-    background-attachment: fixed;
     background-size: cover;
-    color: #e2e8f0;
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overscroll-behavior: none;
+    pointer-events: none;
+    z-index: -1;
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
   }
 
   #root {
@@ -109,8 +122,8 @@
 
   /* ── Scrollbars ── */
   ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
@@ -127,16 +140,20 @@
 /* ── Utility classes ── */
 @layer utilities {
   .glass-card {
-    background: rgba(14, 21, 52, 0.55);
+    background: rgba(14, 21, 52, 0.72);
     border: 1px solid rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(24px) saturate(1.4);
-    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
   .glass-card-strong {
-    background: rgba(14, 21, 52, 0.72);
+    background: rgba(14, 21, 52, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(32px) saturate(1.5);
-    -webkit-backdrop-filter: blur(32px) saturate(1.5);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
   .text-gradient-brand {
     background: linear-gradient(135deg, #06b6d4 0%, #6366f1 50%, #8b5cf6 100%);
@@ -188,5 +205,8 @@
     pointer-events: none;
     z-index: 0;
     border-radius: inherit;
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
   }
 }
