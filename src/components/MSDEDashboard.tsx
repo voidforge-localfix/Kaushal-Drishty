@@ -12,6 +12,8 @@ import {
   Cell,
   Area,
   AreaChart,
+  LineChart,
+  Line,
 } from 'recharts';
 import {
   ChevronDown,
@@ -41,8 +43,11 @@ import {
   ChevronRight,
   Layers,
   Target,
+  Briefcase,
+  GraduationCap,
 } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
+import JobRolesMenuModal from './JobRolesMenuModal';
 
 /* ================================================================== */
 /*  TYPES                                                             */
@@ -118,12 +123,39 @@ interface TrainingCentreDetail {
   status: string;
 }
 
+interface TrainingCentreDistrict {
+  district: string;
+  centre_count: number;
+  seat_capacity: number;
+  utilisation_rate: number;
+  primary_sectors: string[];
+  key_hubs: string;
+}
+
+interface TrainingInstituteLocation {
+  id: string;
+  name: string;
+  district: string;
+  state: string;
+  location_address: string;
+  type: string;
+  sector: string;
+  specialized_trades: string[];
+  sanctioned_seats: number;
+  active_enrolment: number;
+  utilisation_rate: number;
+  status: string;
+  ncvet_grade: string;
+}
+
 interface TrainingCentresData {
   state: string;
   total_centres: number;
   average_utilisation: number;
   monthly_total_throughput: number;
   centres_by_sector: TrainingCentreDetail[];
+  district_distribution?: TrainingCentreDistrict[];
+  institutes?: TrainingInstituteLocation[];
 }
 
 /* ================================================================== */
@@ -507,6 +539,68 @@ function generateLocalSectorForecast(sector: string, state: string): SectorForec
   };
 }
 
+const LOCAL_DISTRICT_CONFIGS: Record<string, Array<{ district: string; share: number; sectors: string[]; hubs: string }>> = {
+  'National': [
+    { district: 'Bengaluru Urban (Karnataka)', share: 0.082, sectors: ['IT / ITES', 'Electronics'], hubs: 'Electronic City, Whitefield, Peenya Industrial Area' },
+    { district: 'Pune (Maharashtra)', share: 0.076, sectors: ['Green Energy', 'Electronics', 'IT / ITES'], hubs: 'Bhosari MIDC, Chakan Auto Cluster, Hinjawadi' },
+    { district: 'Delhi NCR (Gurugram / Noida)', share: 0.088, sectors: ['Logistics', 'IT / ITES', 'Healthcare'], hubs: 'Okhla Phase-3, Udyog Vihar, Noida Sector 62' },
+    { district: 'Mumbai & Thane (Maharashtra)', share: 0.078, sectors: ['Healthcare', 'Logistics', 'IT / ITES'], hubs: 'Kurla NSTI, Andheri MIDC, Navi Mumbai Logistics Hub' },
+    { district: 'Hyderabad (Telangana)', share: 0.065, sectors: ['IT / ITES', 'Healthcare', 'Electronics'], hubs: 'HITEC City, Genome Valley, Cherlapally' },
+    { district: 'Chennai (Tamil Nadu)', share: 0.068, sectors: ['Electronics', 'Green Energy', 'Logistics'], hubs: 'Sriperumbudur EMS Hub, Guindy Industrial Estate' },
+    { district: 'Ahmedabad & Surat (Gujarat)', share: 0.062, sectors: ['Green Energy', 'Logistics', 'Healthcare'], hubs: 'Sanand Industrial Park, Sachin GIDC' },
+    { district: 'Lucknow & Kanpur (Uttar Pradesh)', share: 0.072, sectors: ['Logistics', 'Healthcare', 'Green Energy'], hubs: 'Panki Industrial Estate, Transport Nagar, Amausi' },
+    { district: 'Kolkata & Howrah (West Bengal)', share: 0.054, sectors: ['Logistics', 'Healthcare', 'Electronics'], hubs: 'Salt Lake Sector V, Taratala Industrial Area' },
+    { district: 'Jaipur & Jodhpur (Rajasthan)', share: 0.048, sectors: ['Green Energy', 'Electronics'], hubs: 'Sitapura Industrial Area, Boranada Solar SEZ' },
+  ],
+  'Maharashtra': [
+    { district: 'Pune', share: 0.28, sectors: ['Green Energy', 'Electronics', 'IT / ITES'], hubs: 'Aundh Model ITI, Bhosari MIDC, Chakan Auto Hub, Hinjawadi' },
+    { district: 'Mumbai Suburban', share: 0.22, sectors: ['Healthcare', 'IT / ITES', 'Logistics'], hubs: 'NSTI Kurla, Andheri SEZ, Chembur Technical Institute' },
+    { district: 'Nagpur', share: 0.16, sectors: ['Logistics', 'Green Energy', 'Healthcare'], hubs: 'MIHAN SEZ, Hingna MIDC, Butibori Multimodal Park' },
+    { district: 'Thane', share: 0.14, sectors: ['Logistics', 'Healthcare', 'Electronics'], hubs: 'Bhiwandi Logistics Hub, Wagle Industrial Estate' },
+    { district: 'Nashik', share: 0.10, sectors: ['Electronics', 'Green Energy'], hubs: 'Ambad MIDC, Satpur Industrial Area' },
+    { district: 'Chhatrapati Sambhajinagar', share: 0.10, sectors: ['Green Energy', 'Electronics'], hubs: 'Shendra DMIC, Waluj Industrial Area' },
+  ],
+  'Uttar Pradesh': [
+    { district: 'Lucknow', share: 0.24, sectors: ['Healthcare', 'IT / ITES', 'Logistics'], hubs: 'Alambagh ITI, Gomti Nagar Knowledge Park, Amausi' },
+    { district: 'Kanpur Nagar', share: 0.18, sectors: ['Logistics', 'Green Energy', 'Healthcare'], hubs: 'Panki Industrial Area, Fazalganj ITI Corridor' },
+    { district: 'Gautam Buddha Nagar (Noida)', share: 0.22, sectors: ['Electronics', 'IT / ITES', 'Logistics'], hubs: 'Noida Sector 62 CoE, Greater Noida EcoTech Hub' },
+    { district: 'Varanasi', share: 0.14, sectors: ['Logistics', 'Healthcare', 'Green Energy'], hubs: 'Karaundi Government ITI, Kashi Skill Training Centre' },
+    { district: 'Agra', share: 0.12, sectors: ['Logistics', 'Healthcare'], hubs: 'Foundry Nagar Industrial Complex, Sikandra Centre' },
+    { district: 'Meerut', share: 0.10, sectors: ['Electronics', 'Logistics'], hubs: 'Partapur Industrial Estate, Delhi-Meerut Expressway Hub' },
+  ],
+  'Karnataka': [
+    { district: 'Bengaluru Urban', share: 0.44, sectors: ['IT / ITES', 'Electronics', 'Green Energy'], hubs: 'Peenya Industrial Area, Electronic City, Hosur Road ITI' },
+    { district: 'Mysuru', share: 0.18, sectors: ['Electronics', 'Healthcare', 'IT / ITES'], hubs: 'Hebbal Industrial Area, Belagola PMKK Hub' },
+    { district: 'Dharwad / Hubballi', share: 0.14, sectors: ['Green Energy', 'Logistics'], hubs: 'Tarihal Industrial Estate, Rayapur Tech Zone' },
+    { district: 'Dakshina Kannada (Mangaluru)', share: 0.12, sectors: ['Healthcare', 'Logistics'], hubs: 'Baikampady Industrial Area, Kadri Skill Academy' },
+    { district: 'Belagavi', share: 0.12, sectors: ['Electronics', 'Green Energy'], hubs: 'Udyambag Aerospace & Auto Skilling Centre' },
+  ],
+  'Tamil Nadu': [
+    { district: 'Chennai', share: 0.35, sectors: ['Electronics', 'IT / ITES', 'Healthcare'], hubs: 'Guindy Industrial Estate, Ambattur ITI, Taramani' },
+    { district: 'Coimbatore', share: 0.25, sectors: ['Green Energy', 'Electronics'], hubs: 'SIDCO Industrial Estate, Peelamedu Tech Corridor' },
+    { district: 'Kanchipuram & Sriperumbudur', share: 0.18, sectors: ['Electronics', 'Logistics'], hubs: 'Oragadam Auto Hub, Sriperumbudur EMS Corridor' },
+    { district: 'Madurai', share: 0.12, sectors: ['Healthcare', 'Logistics'], hubs: 'Kappalur Industrial Estate, Madurai Govt ITI' },
+    { district: 'Tiruchirappalli', share: 0.10, sectors: ['Green Energy', 'Logistics'], hubs: 'BHEL Thuvakudi Corridor, Ponmalai Skill Hub' },
+  ],
+  'Gujarat': [
+    { district: 'Ahmedabad', share: 0.32, sectors: ['Logistics', 'Healthcare', 'IT / ITES'], hubs: 'Sanand GIDC, Naroda Industrial Area, Sarkhej' },
+    { district: 'Surat', share: 0.24, sectors: ['Green Energy', 'Logistics'], hubs: 'Sachin GIDC, Hazira Industrial Belt, Katargam' },
+    { district: 'Vadodara', share: 0.20, sectors: ['Green Energy', 'Electronics'], hubs: 'Makarpura GIDC, Savli Industrial Zone' },
+    { district: 'Rajkot', share: 0.14, sectors: ['Electronics', 'Green Energy'], hubs: 'Metoda GIDC, Aji Industrial Area' },
+    { district: 'Kutch', share: 0.10, sectors: ['Green Energy', 'Logistics'], hubs: 'Mundra Renewable Hub, Kandla Port Logistics Zone' },
+  ],
+  'Delhi': [
+    { district: 'South Delhi', share: 0.28, sectors: ['IT / ITES', 'Healthcare'], hubs: 'Okhla Industrial Area Phase 1-3, Saket Tech Hub' },
+    { district: 'North West Delhi', share: 0.26, sectors: ['Logistics', 'Electronics'], hubs: 'Wazirpur Industrial Area, Mangolpuri ITI' },
+    { district: 'West Delhi', share: 0.24, sectors: ['Healthcare', 'Logistics'], hubs: 'Mayapuri Industrial Area, Kirti Nagar Tech Centre' },
+    { district: 'New Delhi / Central', share: 0.22, sectors: ['IT / ITES', 'Healthcare'], hubs: 'Pusa ITI (Apex Institute), Mandir Marg PMKK' },
+  ],
+  'Goa': [
+    { district: 'North Goa (Panaji & Bardez)', share: 0.58, sectors: ['Healthcare', 'IT / ITES', 'Logistics'], hubs: 'Panaji Model ITI, Mapusa Industrial Area, Tuem Electronic City' },
+    { district: 'South Goa (Margao & Mormugao)', share: 0.42, sectors: ['Logistics', 'Green Energy', 'Healthcare'], hubs: 'Margao Govt ITI, Verna Industrial Estate, Mormugao Port Logistics Hub' },
+  ],
+};
+
 function generateLocalCentresData(state: string): TrainingCentresData {
   const profile = STATE_PROFILES[state];
   const total = state === 'National' ? 14200 : (profile?.centres ?? 900);
@@ -532,12 +626,77 @@ function generateLocalCentresData(state: string): TrainingCentresData {
     };
   });
 
+  const distConfigs = LOCAL_DISTRICT_CONFIGS[state] || [
+    { district: `${state} Capital / Central`, share: 0.40, sectors: ['IT / ITES', 'Healthcare', 'Logistics'], hubs: `Central District Skill Academy, ${state} Model ITI` },
+    { district: `${state} Industrial Zone`, share: 0.35, sectors: ['Green Energy', 'Electronics'], hubs: 'State Industrial Development Cluster' },
+    { district: `${state} Regional Corridor`, share: 0.25, sectors: ['Logistics', 'Healthcare'], hubs: 'Regional Vocational Training Centre' },
+  ];
+
+  const districts: TrainingCentreDistrict[] = [];
+  const institutes: TrainingInstituteLocation[] = [];
+  const instTypes = ['Government ITI', 'PMKK (Pradhan Mantri Kaushal Kendra)', 'NSTI (National Skill Training Institute)', 'Industry CoE'];
+  let instCounter = 1;
+
+  for (const d of distConfigs) {
+    const dCount = Math.max(1, Math.round(total * d.share));
+    const dCapacity = dCount * 32;
+    const dUtil = Math.round((0.72 + (hashString(d.district) % 20) * 0.01) * 100) / 100;
+    districts.push({
+      district: d.district,
+      centre_count: dCount,
+      seat_capacity: dCapacity,
+      utilisation_rate: dUtil,
+      primary_sectors: d.sectors,
+      key_hubs: d.hubs,
+    });
+
+    const hubsList = d.hubs.split(',').map((h) => h.trim());
+    for (let hIdx = 0; hIdx < Math.min(3, hubsList.length); hIdx++) {
+      const hub = hubsList[hIdx];
+      const itype = instTypes[hIdx % instTypes.length];
+      const sec = d.sectors[hIdx % d.sectors.length];
+      const cap = Math.max(60, Math.round(350 * (0.8 + (hashString(hub) % 5) * 0.1)));
+      const enrolled = Math.round(cap * dUtil);
+      const uPct = Math.round((enrolled / cap) * 100) / 100;
+
+      institutes.push({
+        id: `TC-${state.slice(0, 2).toUpperCase()}-${String(instCounter).padStart(3, '0')}`,
+        name: `${itype} ${hub}`,
+        district: d.district,
+        state,
+        location_address: `${hub}, ${d.district}, ${state}`,
+        type: itype,
+        sector: sec,
+        specialized_trades: [
+          `${sec} Specialist`,
+          sec === 'Green Energy'
+            ? 'Solar PV & EV Tech'
+            : sec === 'Electronics'
+            ? 'IoT & Embedded Tech'
+            : sec === 'Logistics'
+            ? 'Supply Chain Operations'
+            : sec === 'Healthcare'
+            ? 'Clinical Allied Support'
+            : 'AI & Cloud Engineering',
+        ],
+        sanctioned_seats: cap,
+        active_enrolment: enrolled,
+        utilisation_rate: uPct,
+        status: uPct > 0.85 ? 'Overloaded' : uPct > 0.65 ? 'Active' : 'Underutilised',
+        ncvet_grade: uPct > 0.75 ? 'NCVET 5-Star' : 'NCVET 4-Star',
+      });
+      instCounter++;
+    }
+  }
+
   return {
     state,
     total_centres: total,
     average_utilisation: 0.77,
     monthly_total_throughput: details.reduce((sum, d) => sum + d.monthly_throughput, 0),
     centres_by_sector: details,
+    district_distribution: districts,
+    institutes,
   };
 }
 
@@ -773,8 +932,8 @@ const MSDEDashboard: FC = () => {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [activeData, setActiveData] = useState<StateData | null>(null);
 
-  // Tab state for chart
-  const [chartTab, setChartTab] = useState<'sectors' | 'trend'>('sectors');
+  // Tab state for chart (default to 'trend' line graph on main screen)
+  const [chartTab, setChartTab] = useState<'sectors' | 'trend'>('trend');
   const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesPoint[]>([]);
 
   // Sector Forecast Modal
@@ -789,6 +948,13 @@ const MSDEDashboard: FC = () => {
   const [trainingCentresModalOpen, setTrainingCentresModalOpen] = useState(false);
   const [trainingCentresData, setTrainingCentresData] = useState<TrainingCentresData | null>(null);
   const [loadingCentres, setLoadingCentres] = useState(false);
+  const [trainingCentresTab, setTrainingCentresTab] = useState<'districts' | 'institutes' | 'sectors'>('districts');
+  const [trainingCentresSearch, setTrainingCentresSearch] = useState<string>('');
+  const [trainingCentresDistrictFilter, setTrainingCentresDistrictFilter] = useState<string>('all');
+  const [trainingCentresTypeFilter, setTrainingCentresTypeFilter] = useState<string>('all');
+
+  // Job Roles & Predictions Menu Modal
+  const [jobRolesModalOpen, setJobRolesModalOpen] = useState(false);
 
   const scopeRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<HTMLDivElement>(null);
@@ -1264,6 +1430,20 @@ const MSDEDashboard: FC = () => {
               )}
             </div>
 
+            {/* ── JOB ROLES & TRADES INTELLIGENCE BUTTON ── */}
+            <button
+              id="job-roles-menu-btn"
+              onClick={() => setJobRolesModalOpen(true)}
+              className="flex items-center gap-2 rounded-lg border border-accent-cyan/30 bg-accent-cyan/[0.08] px-3.5 py-2 text-[13px] font-semibold text-accent-cyan shadow-sm shadow-accent-cyan/10 transition-all hover:bg-accent-cyan/[0.16] hover:border-accent-cyan/50 hover:scale-[1.02]"
+              title="Open Sector-Segregated Job Roles, Predictions & Historical Time Series Menu"
+            >
+              <Briefcase className="h-4 w-4 text-accent-cyan" />
+              <span className="hidden sm:inline">Job Roles & Forecasts</span>
+              <span className="rounded bg-accent-cyan/20 px-1.5 py-0.5 text-[10px] font-bold text-accent-cyan">
+                21 Trades
+              </span>
+            </button>
+
             <button
               id="download-api-keys"
               onClick={() => setApiKeyModalOpen(true)}
@@ -1294,7 +1474,19 @@ const MSDEDashboard: FC = () => {
               )}
             </h2>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              id="top-view-sectors-btn"
+              onClick={() => {
+                setChartTab('sectors');
+                document.getElementById('main-chart-card')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="flex items-center gap-2 rounded-xl border border-accent-cyan/30 bg-accent-cyan/[0.08] px-3.5 py-2 text-xs font-semibold text-accent-cyan transition-all hover:bg-accent-cyan/[0.15] hover:border-accent-cyan/50 shadow-sm"
+              title="Inspect Sector-Wise Workforce Segregation"
+            >
+              <BarChart2 className="h-3.5 w-3.5 text-accent-cyan" />
+              <span>See Sector-Wise Segregation</span>
+            </button>
             <button
               id="view-centres-btn"
               onClick={() => setTrainingCentresModalOpen(true)}
@@ -1400,64 +1592,90 @@ const MSDEDashboard: FC = () => {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_400px]">
           {/* chart area */}
           <div
+            id="main-chart-card"
             className="overflow-hidden rounded-2xl glass-card-strong"
             style={{
               animation: mounted ? 'fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) 300ms both' : 'none',
             }}
           >
-            {/* Chart Header with Tab Toggle */}
+            {/* Chart Header */}
             <div className="flex items-center justify-between border-b border-white/[0.05] px-6 py-4 flex-wrap gap-3">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  {chartTab === 'sectors' ? (
+                  {chartTab === 'trend' ? (
                     <>
-                      <BarChart2 className="h-4 w-4 text-accent-cyan" />
-                      <span>{t('chart.title')}</span>
+                      <TrendingUp className="h-4 w-4 text-accent-purple" />
+                      <span>Workforce Supply & Industry Demand Trajectory (Line Graph)</span>
                     </>
                   ) : (
                     <>
-                      <TrendingUp className="h-4 w-4 text-accent-purple" />
-                      <span>Supply & Demand vs Time (12-Month Rolling Gap)</span>
+                      <BarChart2 className="h-4 w-4 text-accent-cyan" />
+                      <span>Sector-Wise Workforce Segregation (Capacity vs Demand)</span>
                     </>
                   )}
                 </h3>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  {chartTab === 'sectors'
-                    ? 'Sector-wise capacity vs demand · Click any sector below for 6-month predictive forecast'
-                    : '12-month rolling trend of capacity, demand, and net gap over time'}
+                <p className="mt-0.5 text-xs text-slate-400">
+                  {chartTab === 'trend'
+                    ? `12-month rolling trend of capacity, demand, and net gap over time across ${scope === 'national' ? 'National Overview' : selectedState}`
+                    : 'Sector-wise capacity vs demand · Click any sector below for 6-month predictive forecast'}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                {/* Switcher Tab */}
-                <div className="flex items-center rounded-xl bg-white/[0.04] p-1 border border-white/[0.08]">
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Primary Action Button: See Sector-Wise Segregation OR Back to Line Graph */}
+                {chartTab === 'trend' ? (
                   <button
+                    id="see-sector-wise-btn"
                     onClick={() => setChartTab('sectors')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      chartTab === 'sectors'
-                        ? 'bg-gradient-to-r from-accent-indigo to-accent-purple text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
+                    className="flex items-center gap-2 rounded-xl border border-accent-cyan/40 bg-accent-cyan/[0.1] px-3.5 py-1.5 text-xs font-bold text-accent-cyan transition-all hover:bg-accent-cyan/[0.18] hover:border-accent-cyan/60 hover:scale-[1.02] shadow-sm"
+                    title="Click to view sector-by-sector capacity vs demand segregation"
                   >
                     <BarChart2 className="h-3.5 w-3.5" />
-                    <span>Sector Segregation</span>
+                    <span>See Sector-Wise Segregation</span>
+                    <ChevronRight className="h-3 w-3" />
                   </button>
+                ) : (
                   <button
+                    id="back-to-line-graph-btn"
                     onClick={() => setChartTab('trend')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      chartTab === 'trend'
-                        ? 'bg-gradient-to-r from-accent-indigo to-accent-purple text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
+                    className="flex items-center gap-2 rounded-xl border border-accent-purple/40 bg-accent-purple/[0.1] px-3.5 py-1.5 text-xs font-bold text-purple-300 transition-all hover:bg-accent-purple/[0.18] hover:border-accent-purple/60 hover:scale-[1.02] shadow-sm"
+                    title="Return to the main timeline line graph"
                   >
-                    <TrendingUp className="h-3.5 w-3.5" />
-                    <span>Gap vs Time</span>
+                    <TrendingUp className="h-3.5 w-3.5 text-accent-purple" />
+                    <span>← Back to Line Graph (Main Screen)</span>
                   </button>
-                </div>
+                )}
+
+                {/* Quick Link to Job Roles Directory & Future Predictions */}
+                <button
+                  id="open-job-roles-quick"
+                  onClick={() => setJobRolesModalOpen(true)}
+                  className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-slate-300 shadow-sm transition-all hover:bg-white/[0.08] hover:text-white hover:scale-[1.02]"
+                  title="View all 21 job roles segregated by sector with future predictions and historical data"
+                >
+                  <Briefcase className="h-3.5 w-3.5 text-accent-cyan" />
+                  <span>Job Roles & Predictions</span>
+                  <span className="text-[10px] text-accent-cyan bg-accent-cyan/20 px-1.5 py-0.2 rounded font-bold">21 Roles →</span>
+                </button>
 
                 {/* Legend */}
                 <div className="hidden sm:flex items-center gap-4 text-xs text-slate-400">
-                  {chartTab === 'sectors' ? (
+                  {chartTab === 'trend' ? (
+                    <>
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-blue-400" />
+                        Training Supply
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-purple-400" />
+                        Industry Demand
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-amber-400" />
+                        Net Deficit (Gap)
+                      </span>
+                    </>
+                  ) : (
                     <>
                       <span className="flex items-center gap-1.5">
                         <span className="h-2.5 w-2.5 rounded-[3px] bg-gradient-to-b from-blue-400 to-accent-blue" />
@@ -1468,31 +1686,74 @@ const MSDEDashboard: FC = () => {
                         {t('chart.industry_demand')}
                       </span>
                     </>
-                  ) : (
-                    <>
-                      <span className="flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-blue-400" />
-                        Supply
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-purple-400" />
-                        Demand
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-amber-400" />
-                        Gap (Deficit)
-                      </span>
-                    </>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Chart Body */}
-            {chartTab === 'sectors' ? (
+            {/* Chart Body: Line Graph by default on Main Screen, Bar Chart when clicking See Sector-Wise Segregation */}
+            {chartTab === 'trend' ? (
               <div className="px-4 pt-4 pb-2">
                 <ResponsiveContainer width="100%" height={380}>
-                  <BarChart data={activeData.sectors} barCategoryGap="22%" barGap={8}>
+                  <LineChart
+                    data={timeSeriesData.length > 0 ? timeSeriesData : generateLocalTimeSeries(scope === 'national' ? 'National' : selectedState)}
+                    margin={{ top: 15, right: 15, left: 0, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.035)" vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 500 }}
+                      axisLine={{ stroke: 'rgba(255,255,255,0.05)' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: '#64748b', fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v: number) => {
+                        const abs = Math.abs(v);
+                        if (abs >= 100000) return `${(v / 1000).toFixed(0)}K`;
+                        if (abs >= 1000) return `${(v / 1000).toFixed(abs >= 10000 ? 0 : 1)}K`;
+                        return `${v}`;
+                      }}
+                    />
+                    <Tooltip content={<TrendTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} />
+                    <Legend content={() => null} />
+                    <Line
+                      type="monotone"
+                      dataKey="supply"
+                      name="Training Supply"
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      dot={{ fill: '#3b82f6', r: 3.5, stroke: '#1e3a8a', strokeWidth: 1.5 }}
+                      activeDot={{ r: 6, fill: '#60a5fa', stroke: '#1e3a8a', strokeWidth: 2 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="demand"
+                      name="Industry Demand"
+                      stroke="#a855f7"
+                      strokeWidth={3}
+                      dot={{ fill: '#a855f7', r: 3.5, stroke: '#581c87', strokeWidth: 1.5 }}
+                      activeDot={{ r: 6, fill: '#c084fc', stroke: '#581c87', strokeWidth: 2 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="gap"
+                      name="Talent Deficit"
+                      stroke="#f59e0b"
+                      strokeWidth={2.5}
+                      strokeDasharray="5 5"
+                      dot={{ fill: '#f59e0b', r: 3.5, stroke: '#78350f', strokeWidth: 1.5 }}
+                      activeDot={{ r: 6, fill: '#fbbf24', stroke: '#78350f', strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="px-4 pt-4 pb-2">
+                <ResponsiveContainer width="100%" height={380}>
+                  <BarChart data={activeData?.sectors || []} barCategoryGap="22%" barGap={8}>
                     <defs>
                       <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#60a5fa" stopOpacity={1} />
@@ -1538,7 +1799,7 @@ const MSDEDashboard: FC = () => {
                         if (sec) setSelectedSectorForForecast(sec);
                       }}
                     >
-                      {activeData.sectors.map((_, i) => (<Cell key={`cap-${i}`} />))}
+                      {activeData?.sectors.map((_, i) => (<Cell key={`cap-${i}`} />))}
                     </Bar>
                     <Bar
                       dataKey="demand"
@@ -1552,80 +1813,9 @@ const MSDEDashboard: FC = () => {
                         if (sec) setSelectedSectorForForecast(sec);
                       }}
                     >
-                      {activeData.sectors.map((_, i) => (<Cell key={`dem-${i}`} />))}
+                      {activeData?.sectors.map((_, i) => (<Cell key={`dem-${i}`} />))}
                     </Bar>
                   </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="px-4 pt-4 pb-2">
-                <ResponsiveContainer width="100%" height={380}>
-                  <AreaChart
-                    data={timeSeriesData.length > 0 ? timeSeriesData : generateLocalTimeSeries(scope === 'national' ? 'National' : selectedState)}
-                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient id="supplyArea" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
-                      </linearGradient>
-                      <linearGradient id="demandArea" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
-                      </linearGradient>
-                      <linearGradient id="gapArea" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.035)" vertical={false} />
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 500 }}
-                      axisLine={{ stroke: 'rgba(255,255,255,0.05)' }}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fill: '#64748b', fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(v: number) => {
-                        const abs = Math.abs(v);
-                        if (abs >= 100000) return `${(v / 1000).toFixed(0)}K`;
-                        if (abs >= 1000) return `${(v / 1000).toFixed(abs >= 10000 ? 0 : 1)}K`;
-                        return `${v}`;
-                      }}
-                    />
-                    <Tooltip content={<TrendTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} />
-                    <Area
-                      type="monotone"
-                      dataKey="supply"
-                      name="Training Supply"
-                      stroke="#3b82f6"
-                      strokeWidth={2.5}
-                      fillOpacity={1}
-                      fill="url(#supplyArea)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="demand"
-                      name="Industry Demand"
-                      stroke="#a855f7"
-                      strokeWidth={2.5}
-                      fillOpacity={1}
-                      fill="url(#demandArea)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="gap"
-                      name="Talent Gap"
-                      stroke="#f59e0b"
-                      strokeWidth={2}
-                      strokeDasharray="4 4"
-                      fillOpacity={1}
-                      fill="url(#gapArea)"
-                    />
-                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             )}
@@ -1639,7 +1829,7 @@ const MSDEDashboard: FC = () => {
                     <span className="font-medium text-slate-300">Sector Segregation (Click sector for future prediction):</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    {activeData.sectors.map((s) => {
+                    {activeData?.sectors.map((s) => {
                       const gap = s.demand - s.capacity;
                       const isDeficit = gap > 0;
                       const formattedGap = Math.abs(gap) >= 1000
@@ -1664,6 +1854,13 @@ const MSDEDashboard: FC = () => {
                         </button>
                       );
                     })}
+                    <button
+                      onClick={() => setChartTab('trend')}
+                      className="ml-auto text-[11px] font-semibold text-accent-purple hover:underline flex items-center gap-1 transition"
+                    >
+                      <TrendingUp className="h-3 w-3" />
+                      <span>Back to Line Graph →</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2176,168 +2373,578 @@ const MSDEDashboard: FC = () => {
 
       {/* ── TRAINING CENTRES DETAILS MODAL ─────────────── */}
       {trainingCentresModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in-up">
-          <div className="relative w-full max-w-3xl overflow-hidden rounded-2xl border border-white/[0.12] bg-navy-900 shadow-2xl p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in-up">
+          <div className="relative w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden rounded-2xl border border-white/[0.12] bg-navy-900 shadow-2xl p-5 sm:p-6">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-4">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-4 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-purple/20 text-accent-purple">
-                  <Building2 className="h-5 w-5" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-accent-purple/30 to-accent-cyan/20 border border-accent-purple/40 text-accent-purple">
+                  <GraduationCap className="h-6 w-6" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-lg font-bold text-white">
-                      Training Centre Infrastructure & Capacity
+                      Training Infrastructure & Centre Geo-Locations
                     </h3>
-                    <span className="rounded bg-accent-purple/20 px-2 py-0.5 text-[10px] font-bold text-accent-purple uppercase">
-                      {scope === 'national' ? 'National' : selectedState}
+                    <span className="rounded bg-accent-purple/20 px-2 py-0.5 text-[10px] font-bold text-accent-purple uppercase border border-accent-purple/30">
+                      {scope === 'national' ? 'National Overview' : selectedState}
                     </span>
+                    {trainingCentresData && (
+                      <span className="rounded bg-accent-cyan/10 px-2 py-0.5 text-[10px] font-semibold text-accent-cyan border border-accent-cyan/20">
+                        {trainingCentresData.total_centres.toLocaleString('en-IN')} Total Centres
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Live capacity utilization & student throughput across accredited centres
+                    Physical centre locations, district clusters, accredited institute directories & seat telemetry
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setTrainingCentresModalOpen(false)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-white/[0.08] hover:text-white transition"
+                className="rounded-lg p-2 text-slate-400 hover:bg-white/[0.08] hover:text-white transition"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             {loadingCentres || !trainingCentresData ? (
-              <div className="py-16 flex flex-col items-center justify-center gap-3">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-accent-purple" />
-                <p className="text-xs text-slate-400 font-medium">Fetching accredited training centre telemetry...</p>
+              <div className="py-24 flex flex-col items-center justify-center gap-3 flex-1">
+                <div className="h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-accent-purple" />
+                <p className="text-xs text-slate-400 font-medium">Fetching accredited training centre telemetry & geo-locations...</p>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Top 3 KPI cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5">
-                    <span className="text-[11px] font-medium text-slate-400">Total Training Centres</span>
-                    <p className="text-2xl font-extrabold text-white mt-1">
-                      {trainingCentresData.total_centres.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-[10px] text-accent-cyan mt-0.5">PMKVY, ITI & NSTI Nodes</p>
-                  </div>
-                  <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5">
-                    <span className="text-[11px] font-medium text-slate-400">Average Utilisation</span>
-                    <p className="text-2xl font-extrabold text-alert-green mt-1">
-                      {Math.round(trainingCentresData.average_utilisation * 100)}%
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Benchmarked against 80% ideal</p>
-                  </div>
-                  <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5">
-                    <span className="text-[11px] font-medium text-slate-400">Monthly Throughput</span>
-                    <p className="text-2xl font-extrabold text-white mt-1">
-                      {trainingCentresData.monthly_total_throughput.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Certified trainees per month</p>
-                  </div>
-                </div>
+            ) : (() => {
+              const districts = trainingCentresData.district_distribution || [];
+              const institutes = trainingCentresData.institutes || [];
 
-                {/* Sector Table */}
-                <div className="rounded-xl border border-white/[0.08] overflow-hidden bg-navy-950/80">
-                  <div className="overflow-x-auto max-h-64">
-                    <table className="w-full text-left text-xs border-separate border-spacing-0">
-                      <thead className="sticky top-0 z-20">
-                        <tr>
-                          <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
-                            Sector
-                          </th>
-                          <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
-                            Centre Count
-                          </th>
-                          <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
-                            Utilisation Rate
-                          </th>
-                          <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
-                            Avg Batch
-                          </th>
-                          <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
-                            Monthly Throughput
-                          </th>
-                          <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-slate-300">
-                        {trainingCentresData.centres_by_sector.map((row) => (
-                          <tr key={row.sector} className="hover:bg-white/[0.04] transition">
-                            <td className="px-4 py-3 font-semibold text-white border-b border-white/[0.04]">
-                              {row.sector}
-                            </td>
-                            <td className="px-4 py-3 font-mono border-b border-white/[0.04]">
-                              {row.centre_count.toLocaleString('en-IN')}
-                            </td>
-                            <td className="px-4 py-3 border-b border-white/[0.04]">
-                              <div className="flex items-center gap-2">
-                                <div className="h-1.5 w-16 rounded-full bg-white/10 overflow-hidden">
+              const uniqueDistricts = ['all', ...Array.from(new Set(institutes.map((i) => i.district)))];
+              const uniqueTypes = ['all', ...Array.from(new Set(institutes.map((i) => i.type)))];
+
+              const filteredDistricts = districts.filter((d) => {
+                if (!trainingCentresSearch.trim()) return true;
+                const q = trainingCentresSearch.toLowerCase();
+                return (
+                  d.district.toLowerCase().includes(q) ||
+                  d.key_hubs.toLowerCase().includes(q) ||
+                  d.primary_sectors.some((s) => s.toLowerCase().includes(q))
+                );
+              });
+
+              const filteredInstitutes = institutes.filter((inst) => {
+                const matchesSearch =
+                  !trainingCentresSearch.trim() ||
+                  inst.name.toLowerCase().includes(trainingCentresSearch.toLowerCase()) ||
+                  inst.district.toLowerCase().includes(trainingCentresSearch.toLowerCase()) ||
+                  inst.location_address.toLowerCase().includes(trainingCentresSearch.toLowerCase()) ||
+                  inst.sector.toLowerCase().includes(trainingCentresSearch.toLowerCase()) ||
+                  inst.specialized_trades.some((trade) => trade.toLowerCase().includes(trainingCentresSearch.toLowerCase()));
+
+                const matchesDistrict =
+                  trainingCentresDistrictFilter === 'all' ||
+                  inst.district.toLowerCase() === trainingCentresDistrictFilter.toLowerCase();
+
+                const matchesType =
+                  trainingCentresTypeFilter === 'all' ||
+                  inst.type.toLowerCase() === trainingCentresTypeFilter.toLowerCase();
+
+                return matchesSearch && matchesDistrict && matchesType;
+              });
+
+              const totalSanctionedCapacity = districts.length > 0
+                ? districts.reduce((acc, d) => acc + d.seat_capacity, 0)
+                : trainingCentresData.total_centres * 32;
+
+              return (
+                <div className="flex flex-col flex-1 min-h-0 space-y-4">
+                  {/* Top 4 KPI mini cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
+                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                      <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Total Centres</span>
+                      <p className="text-xl font-extrabold text-white mt-0.5">
+                        {trainingCentresData.total_centres.toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-[10px] text-accent-cyan mt-0.5">Accredited Nodes</p>
+                    </div>
+                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                      <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Sanctioned Seats</span>
+                      <p className="text-xl font-extrabold text-white mt-0.5">
+                        {totalSanctionedCapacity.toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">District capacity</p>
+                    </div>
+                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                      <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Avg Utilisation</span>
+                      <p className="text-xl font-extrabold text-alert-green mt-0.5">
+                        {Math.round(trainingCentresData.average_utilisation * 100)}%
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Benchmarked at 80%</p>
+                    </div>
+                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                      <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Monthly Output</span>
+                      <p className="text-xl font-extrabold text-white mt-0.5">
+                        {trainingCentresData.monthly_total_throughput.toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Certified trainees/mo</p>
+                    </div>
+                  </div>
+
+                  {/* Navigation Tabs */}
+                  <div className="flex items-center gap-2 border-b border-white/[0.08] pb-2 shrink-0 overflow-x-auto">
+                    <button
+                      onClick={() => setTrainingCentresTab('districts')}
+                      className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition whitespace-nowrap ${
+                        trainingCentresTab === 'districts'
+                          ? 'bg-accent-purple/20 text-accent-purple border border-accent-purple/40 shadow-sm'
+                          : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                      <span>District Locations & Hubs</span>
+                      <span className="rounded-full bg-white/10 px-1.5 py-0.2 text-[10px]">
+                        {districts.length}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setTrainingCentresTab('institutes')}
+                      className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition whitespace-nowrap ${
+                        trainingCentresTab === 'institutes'
+                          ? 'bg-accent-purple/20 text-accent-purple border border-accent-purple/40 shadow-sm'
+                          : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <Building2 className="h-3.5 w-3.5" />
+                      <span>Accredited Institutes Directory</span>
+                      <span className="rounded-full bg-white/10 px-1.5 py-0.2 text-[10px]">
+                        {institutes.length}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setTrainingCentresTab('sectors')}
+                      className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition whitespace-nowrap ${
+                        trainingCentresTab === 'sectors'
+                          ? 'bg-accent-purple/20 text-accent-purple border border-accent-purple/40 shadow-sm'
+                          : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <BarChart2 className="h-3.5 w-3.5" />
+                      <span>Sector Breakdown & Capacity</span>
+                      <span className="rounded-full bg-white/10 px-1.5 py-0.2 text-[10px]">
+                        {trainingCentresData.centres_by_sector.length}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Search and Filters Toolbar for Districts / Institutes */}
+                  {trainingCentresTab !== 'sectors' && (
+                    <div className="flex flex-wrap items-center gap-2.5 shrink-0 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.06]">
+                      <div className="relative flex-1 min-w-[200px]">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                        <input
+                          type="text"
+                          value={trainingCentresSearch}
+                          onChange={(e) => setTrainingCentresSearch(e.target.value)}
+                          placeholder={
+                            trainingCentresTab === 'districts'
+                              ? 'Search districts, corridors, or sectors...'
+                              : 'Search institutes, addresses, districts, or trades...'
+                          }
+                          className="w-full rounded-lg border border-white/[0.08] bg-navy-950/80 pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-accent-purple focus:outline-none"
+                        />
+                        {trainingCentresSearch && (
+                          <button
+                            onClick={() => setTrainingCentresSearch('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+
+                      {trainingCentresTab === 'institutes' && (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] text-slate-400">District:</span>
+                            <select
+                              value={trainingCentresDistrictFilter}
+                              onChange={(e) => setTrainingCentresDistrictFilter(e.target.value)}
+                              className="rounded-lg border border-white/[0.08] bg-navy-950 px-2.5 py-1.5 text-xs text-white focus:border-accent-purple focus:outline-none"
+                            >
+                              <option value="all">All Districts ({institutes.length})</option>
+                              {uniqueDistricts.filter(d => d !== 'all').map((d) => (
+                                <option key={d} value={d}>
+                                  {d} ({institutes.filter(i => i.district === d).length})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] text-slate-400">Type:</span>
+                            <select
+                              value={trainingCentresTypeFilter}
+                              onChange={(e) => setTrainingCentresTypeFilter(e.target.value)}
+                              className="rounded-lg border border-white/[0.08] bg-navy-950 px-2.5 py-1.5 text-xs text-white focus:border-accent-purple focus:outline-none"
+                            >
+                              <option value="all">All Types</option>
+                              {uniqueTypes.filter(t => t !== 'all').map((t) => (
+                                <option key={t} value={t}>{t}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {(trainingCentresDistrictFilter !== 'all' || trainingCentresTypeFilter !== 'all') && (
+                            <button
+                              onClick={() => {
+                                setTrainingCentresDistrictFilter('all');
+                                setTrainingCentresTypeFilter('all');
+                              }}
+                              className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-300 hover:bg-white/10 transition"
+                            >
+                              Reset Filters
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tab 1: District Locations & Industrial Hubs */}
+                  {trainingCentresTab === 'districts' && (
+                    <div className="flex-1 overflow-y-auto pr-1 space-y-3 max-h-[46vh]">
+                      {filteredDistricts.length === 0 ? (
+                        <div className="py-12 text-center text-slate-400 text-xs">
+                          No districts found matching &ldquo;{trainingCentresSearch}&rdquo;.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                          {filteredDistricts.map((d) => (
+                            <div
+                              key={d.district}
+                              className="rounded-xl border border-white/[0.08] bg-navy-950/70 p-4 transition-all hover:border-accent-purple/40 hover:bg-navy-950/90 flex flex-col justify-between"
+                            >
+                              <div>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-accent-purple shrink-0 mt-0.5" />
+                                    <div>
+                                      <h4 className="text-sm font-bold text-white leading-tight">
+                                        {d.district}
+                                      </h4>
+                                      <span className="text-[10px] text-slate-400 font-medium">
+                                        {d.centre_count.toLocaleString('en-IN')} Training Centres
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span
+                                    className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase shrink-0 ${
+                                      d.utilisation_rate > 0.85
+                                        ? 'bg-alert-red/20 text-alert-red'
+                                        : d.utilisation_rate > 0.65
+                                        ? 'bg-alert-green/20 text-alert-green'
+                                        : 'bg-amber-400/20 text-amber-400'
+                                    }`}
+                                  >
+                                    {Math.round(d.utilisation_rate * 100)}% Utilised
+                                  </span>
+                                </div>
+
+                                {/* Capacity Bar */}
+                                <div className="mt-3">
+                                  <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                                    <span>Seat Capacity:</span>
+                                    <span className="font-mono font-semibold text-white">
+                                      {d.seat_capacity.toLocaleString('en-IN')} seats
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full"
+                                      style={{
+                                        width: `${Math.min(100, Math.round(d.utilisation_rate * 100))}%`,
+                                        backgroundColor:
+                                          d.utilisation_rate > 0.85
+                                            ? '#ef4444'
+                                            : d.utilisation_rate > 0.65
+                                            ? '#22c55e'
+                                            : '#f59e0b',
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Key Industrial Corridors */}
+                                <div className="mt-3">
+                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                                    Key Industrial Corridors & Training Hubs:
+                                  </p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {d.key_hubs.split(',').map((hub, hIdx) => (
+                                      <span
+                                        key={hIdx}
+                                        className="rounded-md bg-white/[0.04] px-2 py-0.5 text-[10px] text-slate-300 border border-white/[0.06]"
+                                      >
+                                        {hub.trim()}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Primary Sectors */}
+                                <div className="mt-2.5">
+                                  <div className="flex flex-wrap gap-1">
+                                    {d.primary_sectors.map((sec, sIdx) => (
+                                      <span
+                                        key={sIdx}
+                                        className="rounded bg-accent-cyan/10 px-1.5 py-0.5 text-[9px] font-medium text-accent-cyan border border-accent-cyan/20"
+                                      >
+                                        {sec}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Action Link to Institutes */}
+                              <button
+                                onClick={() => {
+                                  setTrainingCentresDistrictFilter(d.district);
+                                  setTrainingCentresTab('institutes');
+                                }}
+                                className="mt-3.5 flex items-center justify-between w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-1.5 text-[11px] font-medium text-accent-purple hover:bg-accent-purple/[0.1] hover:border-accent-purple/30 transition"
+                              >
+                                <span>View Institutes ({institutes.filter(i => i.district === d.district).length || 'All'})</span>
+                                <ChevronRight className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tab 2: Accredited Institutes Directory */}
+                  {trainingCentresTab === 'institutes' && (
+                    <div className="flex-1 overflow-y-auto pr-1 space-y-3 max-h-[46vh]">
+                      {filteredInstitutes.length === 0 ? (
+                        <div className="py-12 text-center text-slate-400 text-xs">
+                          No accredited training institutes match the specified filter criteria.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                          {filteredInstitutes.map((inst) => (
+                            <div
+                              key={inst.id}
+                              className="rounded-xl border border-white/[0.08] bg-navy-950/70 p-4 transition-all hover:border-accent-cyan/40 hover:bg-navy-950/90 flex flex-col justify-between"
+                            >
+                              <div>
+                                <div className="flex items-start justify-between gap-2 mb-1.5">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span
+                                      className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase border ${
+                                        inst.type.includes('ITI')
+                                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                          : inst.type.includes('PMKK')
+                                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                          : inst.type.includes('NSTI')
+                                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                          : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                      }`}
+                                    >
+                                      {inst.type}
+                                    </span>
+                                    <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400 border border-emerald-500/20">
+                                      {inst.ncvet_grade}
+                                    </span>
+                                  </div>
+                                  <span
+                                    className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${
+                                      inst.status === 'Overloaded'
+                                        ? 'bg-alert-red/20 text-alert-red'
+                                        : 'bg-alert-green/20 text-alert-green'
+                                    }`}
+                                  >
+                                    {inst.status}
+                                  </span>
+                                </div>
+
+                                <h4 className="text-sm font-bold text-white leading-snug">
+                                  {inst.name}
+                                </h4>
+
+                                <div className="mt-1 flex items-start gap-1.5 text-slate-400">
+                                  <MapPin className="h-3.5 w-3.5 text-accent-cyan shrink-0 mt-0.5" />
+                                  <p className="text-xs text-slate-300 leading-tight">
+                                    {inst.location_address}
+                                  </p>
+                                </div>
+
+                                {/* Sector & Specialized Trades */}
+                                <div className="mt-2.5">
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <span className="text-[10px] text-slate-400 font-medium">Sector:</span>
+                                    <span className="text-[10px] font-bold text-white bg-white/[0.05] px-2 py-0.5 rounded border border-white/[0.08]">
+                                      {inst.sector}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {inst.specialized_trades.map((trade, tIdx) => (
+                                      <span
+                                        key={tIdx}
+                                        className="rounded bg-accent-purple/10 px-1.5 py-0.5 text-[9px] text-purple-300 border border-accent-purple/20"
+                                      >
+                                        {trade}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Capacity and Enrolment telemetry */}
+                              <div className="mt-3.5 pt-2.5 border-t border-white/[0.06]">
+                                <div className="flex items-center justify-between text-[11px] mb-1">
+                                  <span className="text-slate-400">
+                                    Sanctioned: <strong className="text-white font-mono">{inst.sanctioned_seats}</strong> seats
+                                  </span>
+                                  <span className="text-slate-400">
+                                    Enrolled: <strong className="text-accent-cyan font-mono">{inst.active_enrolment}</strong>
+                                  </span>
+                                  <span className="font-mono text-xs font-bold text-alert-green">
+                                    {Math.round(inst.utilisation_rate * 100)}%
+                                  </span>
+                                </div>
+                                <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
                                   <div
                                     className="h-full rounded-full"
                                     style={{
-                                      width: `${Math.min(100, Math.round(row.utilisation_rate * 100))}%`,
+                                      width: `${Math.min(100, Math.round(inst.utilisation_rate * 100))}%`,
                                       backgroundColor:
-                                        row.utilisation_rate > 0.85
+                                        inst.utilisation_rate > 0.85
                                           ? '#ef4444'
-                                          : row.utilisation_rate > 0.65
+                                          : inst.utilisation_rate > 0.65
                                           ? '#22c55e'
                                           : '#f59e0b',
                                     }}
                                   />
                                 </div>
-                                <span className="font-mono text-[11px] font-semibold">
-                                  {Math.round(row.utilisation_rate * 100)}%
-                                </span>
                               </div>
-                            </td>
-                            <td className="px-4 py-3 font-mono border-b border-white/[0.04]">
-                              {row.avg_batch_size} students
-                            </td>
-                            <td className="px-4 py-3 font-mono border-b border-white/[0.04]">
-                              {row.monthly_throughput.toLocaleString('en-IN')}/mo
-                            </td>
-                            <td className="px-4 py-3 border-b border-white/[0.04]">
-                              <span
-                                className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase ${
-                                  row.status === 'Overloaded'
-                                    ? 'bg-alert-red/20 text-alert-red'
-                                    : row.status === 'Active'
-                                    ? 'bg-alert-green/20 text-alert-green'
-                                    : 'bg-amber-400/20 text-amber-400'
-                                }`}
-                              >
-                                {row.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tab 3: Sector Breakdown & Capacity Table */}
+                  {trainingCentresTab === 'sectors' && (
+                    <div className="rounded-xl border border-white/[0.08] overflow-hidden bg-navy-950/80 flex-1 max-h-[46vh] flex flex-col">
+                      <div className="overflow-x-auto overflow-y-auto">
+                        <table className="w-full text-left text-xs border-separate border-spacing-0">
+                          <thead className="sticky top-0 z-20">
+                            <tr>
+                              <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                                Sector
+                              </th>
+                              <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                                Centre Count
+                              </th>
+                              <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                                Utilisation Rate
+                              </th>
+                              <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                                Avg Batch
+                              </th>
+                              <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                                Monthly Throughput
+                              </th>
+                              <th className="sticky top-0 z-20 bg-navy-900 border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                                Status
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-slate-300">
+                            {trainingCentresData.centres_by_sector.map((row) => (
+                              <tr key={row.sector} className="hover:bg-white/[0.04] transition">
+                                <td className="px-4 py-3 font-semibold text-white border-b border-white/[0.04]">
+                                  {row.sector}
+                                </td>
+                                <td className="px-4 py-3 font-mono border-b border-white/[0.04]">
+                                  {row.centre_count.toLocaleString('en-IN')}
+                                </td>
+                                <td className="px-4 py-3 border-b border-white/[0.04]">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-1.5 w-16 rounded-full bg-white/10 overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full"
+                                        style={{
+                                          width: `${Math.min(100, Math.round(row.utilisation_rate * 100))}%`,
+                                          backgroundColor:
+                                            row.utilisation_rate > 0.85
+                                              ? '#ef4444'
+                                              : row.utilisation_rate > 0.65
+                                              ? '#22c55e'
+                                              : '#f59e0b',
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="font-mono text-[11px] font-semibold">
+                                      {Math.round(row.utilisation_rate * 100)}%
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 font-mono border-b border-white/[0.04]">
+                                  {row.avg_batch_size} students
+                                </td>
+                                <td className="px-4 py-3 font-mono border-b border-white/[0.04]">
+                                  {row.monthly_throughput.toLocaleString('en-IN')}/mo
+                                </td>
+                                <td className="px-4 py-3 border-b border-white/[0.04]">
+                                  <span
+                                    className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase ${
+                                      row.status === 'Overloaded'
+                                        ? 'bg-alert-red/20 text-alert-red'
+                                        : row.status === 'Active'
+                                        ? 'bg-alert-green/20 text-alert-green'
+                                        : 'bg-amber-400/20 text-amber-400'
+                                    }`}
+                                  >
+                                    {row.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Footer note */}
+                  <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-white/[0.06] shrink-0">
+                    <span className="flex items-center gap-1.5">
+                      <Shield className="h-3.5 w-3.5 text-accent-cyan" />
+                      Integrated with MSDE SIP (Skill India Portal), NCVET National Registry & DGT MIS
+                    </span>
+                    <button
+                      onClick={() => setTrainingCentresModalOpen(false)}
+                      className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.08] transition"
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
-
-                {/* Footer note */}
-                <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
-                  <span className="flex items-center gap-1.5">
-                    <Shield className="h-3.5 w-3.5 text-accent-cyan" />
-                    Integrated with MSDE SIP (Skill India Portal) & DGT MIS
-                  </span>
-                  <button
-                    onClick={() => setTrainingCentresModalOpen(false)}
-                    className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.08] transition"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       )}
+
+      {/* ── JOB ROLES & TRADES INTELLIGENCE MODAL ─────────── */}
+      <JobRolesMenuModal
+        isOpen={jobRolesModalOpen}
+        onClose={() => setJobRolesModalOpen(false)}
+        state={scope === 'national' ? 'National' : selectedState}
+        scope={scope}
+      />
     </div>
   );
 };

@@ -965,11 +965,74 @@ async def get_sector_forecast(
 #  TRAINING CENTRES ENDPOINT
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+STATE_DISTRICT_HUBS = {
+    "National": [
+        {"district": "Bengaluru Urban (Karnataka)", "share": 0.082, "sectors": ["IT / ITES", "Electronics"], "hubs": "Electronic City, Whitefield, Peenya Industrial Area"},
+        {"district": "Pune (Maharashtra)", "share": 0.076, "sectors": ["Green Energy", "Electronics", "IT / ITES"], "hubs": "Bhosari MIDC, Chakan Auto Cluster, Hinjawadi"},
+        {"district": "Delhi NCR (Gurugram / Noida)", "share": 0.088, "sectors": ["Logistics", "IT / ITES", "Healthcare"], "hubs": "Okhla Phase-3, Udyog Vihar, Noida Sector 62"},
+        {"district": "Mumbai & Thane (Maharashtra)", "share": 0.078, "sectors": ["Healthcare", "Logistics", "IT / ITES"], "hubs": "Kurla NSTI, Andheri MIDC, Navi Mumbai Logistics Hub"},
+        {"district": "Hyderabad (Telangana)", "share": 0.065, "sectors": ["IT / ITES", "Healthcare", "Electronics"], "hubs": "HITEC City, Genome Valley, Cherlapally"},
+        {"district": "Chennai (Tamil Nadu)", "share": 0.068, "sectors": ["Electronics", "Green Energy", "Logistics"], "hubs": "Sriperumbudur EMS Hub, Guindy Industrial Estate"},
+        {"district": "Ahmedabad & Surat (Gujarat)", "share": 0.062, "sectors": ["Green Energy", "Logistics", "Healthcare"], "hubs": "Sanand Industrial Park, Sachin GIDC"},
+        {"district": "Lucknow & Kanpur (Uttar Pradesh)", "share": 0.072, "sectors": ["Logistics", "Healthcare", "Green Energy"], "hubs": "Panki Industrial Estate, Transport Nagar, Amausi"},
+        {"district": "Kolkata & Howrah (West Bengal)", "share": 0.054, "sectors": ["Logistics", "Healthcare", "Electronics"], "hubs": "Salt Lake Sector V, Taratala Industrial Area"},
+        {"district": "Jaipur & Jodhpur (Rajasthan)", "share": 0.048, "sectors": ["Green Energy", "Electronics"], "hubs": "Sitapura Industrial Area, Boranada Solar SEZ"},
+    ],
+    "Maharashtra": [
+        {"district": "Pune", "share": 0.28, "sectors": ["Green Energy", "Electronics", "IT / ITES"], "hubs": "Aundh Model ITI, Bhosari MIDC, Chakan Auto Hub, Hinjawadi"},
+        {"district": "Mumbai Suburban", "share": 0.22, "sectors": ["Healthcare", "IT / ITES", "Logistics"], "hubs": "NSTI Kurla, Andheri SEZ, Chembur Technical Institute"},
+        {"district": "Nagpur", "share": 0.16, "sectors": ["Logistics", "Green Energy", "Healthcare"], "hubs": "MIHAN SEZ, Hingna MIDC, Butibori Multimodal Park"},
+        {"district": "Thane", "share": 0.14, "sectors": ["Logistics", "Healthcare", "Electronics"], "hubs": "Bhiwandi Logistics Hub, Wagle Industrial Estate"},
+        {"district": "Nashik", "share": 0.10, "sectors": ["Electronics", "Green Energy"], "hubs": "Ambad MIDC, Satpur Industrial Area"},
+        {"district": "Chhatrapati Sambhajinagar", "share": 0.10, "sectors": ["Green Energy", "Electronics"], "hubs": "Shendra DMIC, Waluj Industrial Area"},
+    ],
+    "Uttar Pradesh": [
+        {"district": "Lucknow", "share": 0.24, "sectors": ["Healthcare", "IT / ITES", "Logistics"], "hubs": "Alambagh ITI, Gomti Nagar Knowledge Park, Amausi"},
+        {"district": "Kanpur Nagar", "share": 0.18, "sectors": ["Logistics", "Green Energy", "Healthcare"], "hubs": "Panki Industrial Area, Fazalganj ITI Corridor"},
+        {"district": "Gautam Buddha Nagar (Noida)", "share": 0.22, "sectors": ["Electronics", "IT / ITES", "Logistics"], "hubs": "Noida Sector 62 CoE, Greater Noida EcoTech Hub"},
+        {"district": "Varanasi", "share": 0.14, "sectors": ["Logistics", "Healthcare", "Green Energy"], "hubs": "Karaundi Government ITI, Kashi Skill Training Centre"},
+        {"district": "Agra", "share": 0.12, "sectors": ["Logistics", "Healthcare"], "hubs": "Foundry Nagar Industrial Complex, Sikandra Centre"},
+        {"district": "Meerut", "share": 0.10, "sectors": ["Electronics", "Logistics"], "hubs": "Partapur Industrial Estate, Delhi-Meerut Expressway Hub"},
+    ],
+    "Karnataka": [
+        {"district": "Bengaluru Urban", "share": 0.44, "sectors": ["IT / ITES", "Electronics", "Green Energy"], "hubs": "Peenya Industrial Area, Electronic City, Hosur Road ITI"},
+        {"district": "Mysuru", "share": 0.18, "sectors": ["Electronics", "Healthcare", "IT / ITES"], "hubs": "Hebbal Industrial Area, Belagola PMKK Hub"},
+        {"district": "Dharwad / Hubballi", "share": 0.14, "sectors": ["Green Energy", "Logistics"], "hubs": "Tarihal Industrial Estate, Rayapur Tech Zone"},
+        {"district": "Dakshina Kannada (Mangaluru)", "share": 0.12, "sectors": ["Healthcare", "Logistics"], "hubs": "Baikampady Industrial Area, Kadri Skill Academy"},
+        {"district": "Belagavi", "share": 0.12, "sectors": ["Electronics", "Green Energy"], "hubs": "Udyambag Aerospace & Auto Skilling Centre"},
+    ],
+    "Tamil Nadu": [
+        {"district": "Chennai", "share": 0.35, "sectors": ["Electronics", "IT / ITES", "Healthcare"], "hubs": "Guindy Industrial Estate, Ambattur ITI, Taramani"},
+        {"district": "Coimbatore", "share": 0.25, "sectors": ["Green Energy", "Electronics"], "hubs": "SIDCO Industrial Estate, Peelamedu Tech Corridor"},
+        {"district": "Kanchipuram & Sriperumbudur", "share": 0.18, "sectors": ["Electronics", "Logistics"], "hubs": "Oragadam Auto Hub, Sriperumbudur EMS Corridor"},
+        {"district": "Madurai", "share": 0.12, "sectors": ["Healthcare", "Logistics"], "hubs": "Kappalur Industrial Estate, Madurai Govt ITI"},
+        {"district": "Tiruchirappalli", "share": 0.10, "sectors": ["Green Energy", "Logistics"], "hubs": "BHEL Thuvakudi Corridor, Ponmalai Skill Hub"},
+    ],
+    "Gujarat": [
+        {"district": "Ahmedabad", "share": 0.32, "sectors": ["Logistics", "Healthcare", "IT / ITES"], "hubs": "Sanand GIDC, Naroda Industrial Area, Sarkhej"},
+        {"district": "Surat", "share": 0.24, "sectors": ["Green Energy", "Logistics"], "hubs": "Sachin GIDC, Hazira Industrial Belt, Katargam"},
+        {"district": "Vadodara", "share": 0.20, "sectors": ["Green Energy", "Electronics"], "hubs": "Makarpura GIDC, Savli Industrial Zone"},
+        {"district": "Rajkot", "share": 0.14, "sectors": ["Electronics", "Green Energy"], "hubs": "Metoda GIDC, Aji Industrial Area"},
+        {"district": "Kutch", "share": 0.10, "sectors": ["Green Energy", "Logistics"], "hubs": "Mundra Renewable Hub, Kandla Port Logistics Zone"},
+    ],
+    "Delhi": [
+        {"district": "South Delhi", "share": 0.28, "sectors": ["IT / ITES", "Healthcare"], "hubs": "Okhla Industrial Area Phase 1-3, Saket Tech Hub"},
+        {"district": "North West Delhi", "share": 0.26, "sectors": ["Logistics", "Electronics"], "hubs": "Wazirpur Industrial Area, Mangolpuri ITI"},
+        {"district": "West Delhi", "share": 0.24, "sectors": ["Healthcare", "Logistics"], "hubs": "Mayapuri Industrial Area, Kirti Nagar Tech Centre"},
+        {"district": "New Delhi / Central", "share": 0.22, "sectors": ["IT / ITES", "Healthcare"], "hubs": "Pusa ITI (Apex Institute), Mandir Marg PMKK"},
+    ],
+    "Goa": [
+        {"district": "North Goa (Panaji & Bardez)", "share": 0.58, "sectors": ["Healthcare", "IT / ITES", "Logistics"], "hubs": "Panaji Model ITI, Mapusa Industrial Area, Tuem Electronic City"},
+        {"district": "South Goa (Margao & Mormugao)", "share": 0.42, "sectors": ["Logistics", "Green Energy", "Healthcare"], "hubs": "Margao Govt ITI, Verna Industrial Estate, Mormugao Port Logistics Hub"},
+    ],
+}
+
+
 @app.get(
     "/api/v1/training-centres",
     tags=["Demand Intelligence"],
-    summary="Training Centre Details",
-    description="Returns training centre breakdown with utilization rates for a state.",
+    summary="Training Centre Infrastructure, Locations & District Breakdown",
+    description="Returns training centre breakdown, geographic locations, districts, and accredited institutes for a state.",
 )
 async def get_training_centres(
     state: str = Query("National", description="State or 'National'"),
@@ -1004,13 +1067,72 @@ async def get_training_centres(
             "monthly_throughput": throughput,
             "status": "Overloaded" if s["util"] > 0.85 else "Active" if s["util"] > 0.65 else "Underutilised",
         })
+
+    # District & Geographic Distribution
+    dist_configs = STATE_DISTRICT_HUBS.get(state)
+    if not dist_configs:
+        dist_configs = [
+            {"district": f"{state} Capital / Central", "share": 0.40, "sectors": ["IT / ITES", "Healthcare", "Logistics"], "hubs": f"Central District Skill Academy, {state} Model ITI"},
+            {"district": f"{state} Industrial Zone", "share": 0.35, "sectors": ["Green Energy", "Electronics"], "hubs": "State Industrial Development Cluster"},
+            {"district": f"{state} Regional Corridor", "share": 0.25, "sectors": ["Logistics", "Healthcare"], "hubs": "Regional Vocational Training Centre"},
+        ]
+
+    districts = []
+    institutes = []
+    inst_types = ["Government ITI", "PMKK (Pradhan Mantri Kaushal Kendra)", "NSTI (National Skill Training Institute)", "Industry CoE"]
+    
+    inst_id_counter = 1
+    for d in dist_configs:
+        d_count = max(1, int(total * d["share"]))
+        d_capacity = d_count * 32
+        d_util = round(0.72 + (hash(d["district"]) % 20) * 0.01, 2)
+        districts.append({
+            "district": d["district"],
+            "centre_count": d_count,
+            "seat_capacity": d_capacity,
+            "utilisation_rate": d_util,
+            "primary_sectors": d["sectors"],
+            "key_hubs": d["hubs"],
+        })
+
+        # Generate realistic accredited institutes for this district
+        hubs_list = [h.strip() for h in d["hubs"].split(",")]
+        for h_idx, hub in enumerate(hubs_list[:3]):
+            itype = inst_types[h_idx % len(inst_types)]
+            sec = d["sectors"][h_idx % len(d["sectors"])]
+            cap = max(60, int(350 * (0.8 + (hash(hub) % 5) * 0.1)))
+            enrolled = int(cap * d_util)
+            u_pct = round(enrolled / cap, 2)
+            institutes.append({
+                "id": f"TC-{state[:2].upper()}-{inst_id_counter:03d}",
+                "name": f"{itype} {hub}",
+                "district": d["district"],
+                "state": state,
+                "location_address": f"{hub}, {d['district']}, {state}",
+                "type": itype,
+                "sector": sec,
+                "specialized_trades": [
+                    f"{sec} Specialist",
+                    "Solar PV & EV Tech" if sec == "Green Energy" else "IoT & Embedded Tech" if sec == "Electronics" else "Supply Chain Operations" if sec == "Logistics" else "Clinical Allied Support" if sec == "Healthcare" else "AI & Cloud Engineering"
+                ],
+                "sanctioned_seats": cap,
+                "active_enrolment": enrolled,
+                "utilisation_rate": u_pct,
+                "status": "Overloaded" if u_pct > 0.85 else "Active" if u_pct > 0.65 else "Underutilised",
+                "ncvet_grade": "NCVET 5-Star" if u_pct > 0.75 else "NCVET 4-Star",
+            })
+            inst_id_counter += 1
+
     return {
         "api_version": "1.0.0",
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "state": state, "total_centres": total,
+        "state": state,
+        "total_centres": total,
         "average_utilisation": round(sum(c["utilisation_rate"] for c in details) / len(details), 2),
         "monthly_total_throughput": sum(c["monthly_throughput"] for c in details),
         "centres_by_sector": details,
+        "district_distribution": districts,
+        "institutes": institutes,
     }
 
 
