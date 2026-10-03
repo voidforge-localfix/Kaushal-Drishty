@@ -936,6 +936,13 @@ const MSDEDashboard: FC = () => {
   const [chartTab, setChartTab] = useState<'sectors' | 'trend'>('trend');
   const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesPoint[]>([]);
 
+  // Memoized time-series forecast data to avoid repeated calculations during renders
+  const activeTimeSeries = useMemo(() => {
+    return timeSeriesData.length > 0
+      ? timeSeriesData
+      : generateLocalTimeSeries(scope === 'national' ? 'National' : selectedState);
+  }, [timeSeriesData, scope, selectedState]);
+
   // Sector Forecast Modal
   const [selectedSectorForForecast, setSelectedSectorForForecast] = useState<string | null>(null);
   const [sectorForecastData, setSectorForecastData] = useState<SectorForecastData | null>(null);
@@ -1221,13 +1228,6 @@ const MSDEDashboard: FC = () => {
     scope === 'national'
       ? t('nav.scope_national')
       : selectedState;
-
-  // Memoized time-series forecast data to avoid repeated calculations during renders
-  const activeTimeSeries = useMemo(() => {
-    return timeSeriesData.length > 0
-      ? timeSeriesData
-      : generateLocalTimeSeries(scope === 'national' ? 'National' : selectedState);
-  }, [timeSeriesData, scope, selectedState]);
 
   return (
     <div className="noise-overlay min-h-screen">
